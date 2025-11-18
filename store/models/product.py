@@ -1,8 +1,6 @@
-# Em store/models/product.py
-
 from pydantic import UUID4, Field
 from uuid import uuid4
-from datetime import datetime, timezone  # 1. Importe timezone
+from datetime import datetime, timezone
 from store.schemas.product import ProductBase
 
 

@@ -1,13 +1,11 @@
-# Em tests/conftest.py
-
 import pytest
 import motor.motor_asyncio
 from httpx import AsyncClient, ASGITransport
-from datetime import timezone  # 1. Importe timezone
+from datetime import timezone
 
 from store.core.config import settings
 from store.main import app
-from store.core.db import get_db  # Importe a dependência que queremos substituir
+from store.core.db import get_db
 
 
 # Fixture 1: Para testes de API (Controller)
@@ -37,7 +35,7 @@ async def client():
     # Crie o cliente HTTP
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        yield ac  # O TESTE EXECUTA AQUI
+        yield ac
 
     # Limpe a base de dados de teste
     await db.drop_collection("products")
@@ -64,7 +62,7 @@ async def db_client():
     )
     db = client[settings.MONGODB_DB_NAME_TEST]
 
-    yield db  # O TESTE EXECUTA AQUI
+    yield db
 
     # Limpe a base de dados
     await db.drop_collection("products")

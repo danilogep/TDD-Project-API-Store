@@ -1,5 +1,3 @@
-# Em tests/controllers/test_product_controller.py
-
 import pytest
 from httpx import AsyncClient
 from store.schemas.product import ProductIn
@@ -187,10 +185,9 @@ async def test_update_product_should_allow_manual_updated_at(client: AsyncClient
     assert new_updated_at == manual_date
 
 
-# --- ESTE É O NOVO TESTE DO DESAFIO ---
 @pytest.mark.asyncio
 async def test_list_products_should_filter_by_price(client: AsyncClient):
-    # 1. Crie vários produtos com preços diferentes
+    # 1. Cria vários produtos com preços diferentes
     await client.post(
         "/products/",
         json={
@@ -228,16 +225,16 @@ async def test_list_products_should_filter_by_price(client: AsyncClient):
         },
     )
 
-    # 2. Faça a chamada GET com os filtros (isto vai falhar)
+    # 2. Faz a chamada GET com os filtros (isto vai falhar)
     response_get = await client.get("/products/?price_min=5000&price_max=8000")
 
-    # 3. Verifique a resposta
+    # 3. Verifica a resposta
     assert response_get.status_code == 200
 
     response_data = response_get.json()
     assert isinstance(response_data, list)
 
-    # 4. Verifique se *apenas* os produtos no intervalo foram retornados
+    # 4. Verifica se *apenas* os produtos no intervalo foram retornados
     assert len(response_data) == 2
     prices = sorted([item["price"] for item in response_data])
     assert prices == [6000, 7500]

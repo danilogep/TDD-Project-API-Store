@@ -1,9 +1,7 @@
-# Em store/schemas/product.py
-
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional
 from uuid import UUID
-from datetime import datetime  # 1. Certifique-se que datetime está importado
+from datetime import datetime
 
 
 class BaseSchema(BaseModel):
@@ -43,7 +41,6 @@ class ProductUpdate(BaseSchema):
     price: Optional[float] = Field(None, description="Preço do produto")
     status: Optional[str] = Field(None, description="Status do produto")
 
-    # 2. ADICIONE ESTA LINHA (desafio final)
     updated_at: Optional[datetime] = Field(
         None, description="Data da última atualização"
     )

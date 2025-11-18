@@ -6,7 +6,7 @@ class Settings(BaseSettings):
 
     MONGODB_URL: str
     MONGODB_DB_NAME: str
-    MONGODB_DB_NAME_TEST: str = "test_store"  # Adicione esta linha
+    MONGODB_DB_NAME_TEST: str = "test_store"
 
 
 settings = Settings()

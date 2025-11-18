@@ -1,9 +1,7 @@
-# Em store/usecases/product.py
-
 from store.repositories.product import ProductRepository
 from store.schemas.product import ProductIn, ProductOut, ProductUpdate
 from store.models.product import ProductModel
-from typing import List, Optional  # 1. Importe o Optional
+from typing import List, Optional
 from uuid import UUID
 from pymongo.errors import PyMongoError
 from store.core.exceptions import DatabaseException
@@ -29,14 +27,14 @@ class ProductUsecase:
 
         return product_out
 
-    # 2. MÉTODO 'LIST' MODIFICADO
+    # 2. MÉTODO 'LIST'
     async def list(
         self, price_min: Optional[float] = None, price_max: Optional[float] = None
     ) -> List[ProductOut]:
         """
         Coordena a listagem de produtos, aplicando filtros.
         """
-        # 3. Passe os filtros para o repositório
+        # 3. Passa os filtros para o repositório
         products_model = await self.repository.list(
             price_min=price_min, price_max=price_max
         )

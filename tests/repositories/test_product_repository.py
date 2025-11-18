@@ -1,10 +1,8 @@
-# Em tests/repositories/test_product_repository.py
-
 import pytest
 from store.models.product import ProductModel
 from store.repositories.product import ProductRepository
 from uuid import uuid4
-from store.schemas.product import ProductUpdate  # Importe o ProductUpdate
+from store.schemas.product import ProductUpdate
 
 
 @pytest.mark.asyncio
@@ -99,7 +97,6 @@ async def test_repository_update_should_return_product(db_client):
     assert updated_product.status == "unavailable"
 
 
-# --- ESTE É O NOVO TESTE ---
 @pytest.mark.asyncio
 async def test_repository_delete_should_remove_product(db_client):
     # 1. Insere um produto

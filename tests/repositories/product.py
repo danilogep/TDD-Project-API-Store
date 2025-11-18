@@ -1,7 +1,6 @@
-# Em store/repositories/product.py
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from store.models.product import ProductModel
-from store.core.db import mongo_client  # Importamos o cliente principal
+from store.core.db import mongo_client
 
 
 class ProductRepository:

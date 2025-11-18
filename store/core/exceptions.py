@@ -1,6 +1,3 @@
-# Em store/core/exceptions.py
-
-
 class BaseException(Exception):
     """Exceção base para a aplicação."""
 

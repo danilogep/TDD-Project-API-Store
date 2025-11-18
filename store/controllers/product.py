@@ -1,12 +1,10 @@
-# Em store/controllers/product.py
-
 from fastapi import APIRouter, status, Depends, HTTPException, Response
 from store.schemas.product import ProductIn, ProductOut, ProductUpdate
 from store.usecases.product import ProductUsecase
 from store.repositories.product import ProductRepository
 from store.core.db import get_db
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from typing import List, Optional  # 1. Importe o Optional
+from typing import List, Optional
 from uuid import UUID
 from store.core.exceptions import DatabaseException
 
@@ -32,10 +30,10 @@ async def post(body: ProductIn, usecase: ProductUsecase = Depends(get_usecase)):
         )
 
 
-# 2. MÉTODO 'GET' MODIFICADO
+# 2. MÉTODO 'GET'
 @router.get("/", status_code=status.HTTP_200_OK, response_model=List[ProductOut])
 async def get(
-    # 3. Adicione os query parameters (opcionais)
+    # 3. Adiciona os query parameters (opcionais)
     price_min: Optional[float] = None,
     price_max: Optional[float] = None,
     usecase: ProductUsecase = Depends(get_usecase),

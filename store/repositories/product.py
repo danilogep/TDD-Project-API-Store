@@ -1,10 +1,8 @@
-# Em store/repositories/product.py
-
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from store.models.product import ProductModel
 from store.schemas.product import ProductUpdate
 from store.core.db import mongo_client
-from typing import List, Optional  # 1. Importe o Optional
+from typing import List, Optional
 from uuid import UUID
 from pymongo.results import UpdateResult, DeleteResult
 
@@ -18,14 +16,14 @@ class ProductRepository:
         result = await self.collection.insert_one(product_model.model_dump())
         return result.acknowledged
 
-    # 2. MÉTODO 'LIST' MODIFICADO
+    # 2. MÉTODO 'LIST'
     async def list(
         self, price_min: Optional[float] = None, price_max: Optional[float] = None
     ) -> List[ProductModel]:
         """
         Lista produtos, opcionalmente filtrando por preço.
         """
-        # 3. Construa a query de filtro
+        # 3. Constroi a query de filtro
         filter_query = {}
         price_filter = {}
 
@@ -38,7 +36,7 @@ class ProductRepository:
         if price_filter:
             filter_query["price"] = price_filter
 
-        # 4. Use a query de filtro no 'find'
+        # 4. Usa a query de filtro no 'find'
         products = [
             ProductModel(**item) async for item in self.collection.find(filter_query)
         ]

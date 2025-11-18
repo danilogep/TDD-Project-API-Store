@@ -1,5 +1,3 @@
-# Em tests/usecases/test_product_usecase.py
-
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 from store.usecases.product import ProductUsecase
@@ -112,7 +110,6 @@ async def test_usecase_update_should_return_product_out():
     assert product_out.uuid == fake_uuid
 
 
-# --- ESTE É O NOVO TESTE ---
 @pytest.mark.asyncio
 async def test_usecase_delete_should_return_true(db_client):
     # 1. Defina o UUID
