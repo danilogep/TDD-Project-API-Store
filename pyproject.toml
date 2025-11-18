@@ -1,0 +1,35 @@
+[project]
+name = "store"
+version = "0.0.1"
+description = "API Store"
+authors = [
+    {name = "DaniloGEP",email = "danilo.gep@gmail.com"}
+]
+readme = "README.md"
+requires-python = "^3.12"
+dependencies = [
+    "fastapi (>=0.121.2,<0.122.0)",
+    "motor (>=3.7.1,<4.0.0)",
+    "pytest (>=9.0.1,<10.0.0)",
+    "httpx (>=0.28.1,<0.29.0)",
+    "uvicorn (>=0.38.0,<0.39.0)",
+    "pydantic (>=2.12.4,<3.0.0)",
+    "python-dotenv (>=1.2.1,<2.0.0)",
+    "pydantic-settings (>=2.12.0,<3.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "pytest-anyio (>=0.0.0,<0.0.1)",
+    "pytest-asyncio (>=1.3.0,<2.0.0)",
+]
+
+
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
