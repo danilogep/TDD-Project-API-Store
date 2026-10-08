@@ -12,6 +12,9 @@ RUN pip install --no-cache-dir "poetry>=2.0,<3.0"
 COPY pyproject.toml poetry.lock ./
 RUN poetry install --only main --no-root --no-interaction
 
+# O README entra porque o pyproject o declara: sem ele, `poetry install`
+# da raiz falha com "Readme path /app/README.md does not exist".
+COPY README.md ./
 COPY store ./store
 RUN poetry install --only-root --no-interaction
 

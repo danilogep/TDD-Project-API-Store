@@ -11,4 +11,3 @@ coverage.xml
 htmlcov/
 tests/
 .env
-README.md
