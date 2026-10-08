@@ -14,3 +14,11 @@ __pycache__/
 
 # Cache do VSCode
 .vscode/
+# Cobertura e lint
+.coverage
+coverage.xml
+htmlcov/
+.ruff_cache/
+
+# O .env.example e versionado; o .env nunca
+!.env.example

@@ -1,7 +1,7 @@
-from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional
-from uuid import UUID
 from datetime import datetime
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class BaseSchema(BaseModel):
@@ -36,11 +36,11 @@ class ProductOut(ProductBase):
 class ProductUpdate(BaseSchema):
     """Schema para atualizar um produto (todos os campos são opcionais)"""
 
-    name: Optional[str] = Field(None, description="Nome do produto")
-    quantity: Optional[int] = Field(None, description="Quantidade em estoque")
-    price: Optional[float] = Field(None, description="Preço do produto")
-    status: Optional[str] = Field(None, description="Status do produto")
+    name: str | None = Field(None, description="Nome do produto")
+    quantity: int | None = Field(None, description="Quantidade em estoque")
+    price: float | None = Field(None, description="Preço do produto")
+    status: str | None = Field(None, description="Status do produto")
 
-    updated_at: Optional[datetime] = Field(
+    updated_at: datetime | None = Field(
         None, description="Data da última atualização"
     )

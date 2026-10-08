@@ -1,10 +1,12 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock
-from store.usecases.product import ProductUsecase
-from store.schemas.product import ProductIn, ProductOut, ProductUpdate
+from uuid import uuid4
+
+import pytest
+
 from store.models.product import ProductModel
 from store.repositories.product import ProductRepository
-from uuid import uuid4
+from store.schemas.product import ProductIn, ProductOut, ProductUpdate
+from store.usecases.product import ProductUsecase
 
 
 @pytest.mark.asyncio

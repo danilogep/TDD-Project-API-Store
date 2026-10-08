@@ -1,11 +1,12 @@
+from datetime import UTC, datetime
+from uuid import UUID
+
+from pymongo.errors import PyMongoError
+
+from store.core.exceptions import DatabaseException
+from store.models.product import ProductModel
 from store.repositories.product import ProductRepository
 from store.schemas.product import ProductIn, ProductOut, ProductUpdate
-from store.models.product import ProductModel
-from typing import List, Optional
-from uuid import UUID
-from pymongo.errors import PyMongoError
-from store.core.exceptions import DatabaseException
-from datetime import datetime, timezone
 
 
 class ProductUsecase:
@@ -20,8 +21,8 @@ class ProductUsecase:
 
         try:
             await self.repository.create(product_model)
-        except PyMongoError as e:
-            raise DatabaseException(f"Erro ao inserir produto no banco: {e}")
+        except PyMongoError as erro:
+            raise DatabaseException(f"Erro ao inserir produto no banco: {erro}") from erro
 
         product_out = ProductOut(**product_model.model_dump())
 
@@ -29,8 +30,8 @@ class ProductUsecase:
 
     # 2. MÉTODO 'LIST'
     async def list(
-        self, price_min: Optional[float] = None, price_max: Optional[float] = None
-    ) -> List[ProductOut]:
+        self, price_min: float | None = None, price_max: float | None = None
+    ) -> list[ProductOut]:
         """
         Coordena a listagem de produtos, aplicando filtros.
         """
@@ -57,7 +58,7 @@ class ProductUsecase:
         Coordena a atualização de um produto.
         """
         if body.updated_at is None:
-            body.updated_at = datetime.now(timezone.utc)
+            body.updated_at = datetime.now(UTC)
 
         product_model = await self.repository.update(uuid, body)
 

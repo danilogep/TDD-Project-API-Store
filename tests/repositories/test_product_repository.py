@@ -1,7 +1,8 @@
+
 import pytest
+
 from store.models.product import ProductModel
 from store.repositories.product import ProductRepository
-from uuid import uuid4
 from store.schemas.product import ProductUpdate
 
 

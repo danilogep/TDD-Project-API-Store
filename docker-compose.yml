@@ -1,0 +1,34 @@
+# API + MongoDB com um comando: `docker compose up --build`
+#
+# Para rodar só o banco (e apontar a suíte para ele):
+#   docker compose up -d mongo
+#   MONGODB_URL_TEST=mongodb://localhost:27017 poetry run pytest
+
+services:
+  mongo:
+    image: mongo:7.0
+    container_name: store_mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: .
+    container_name: store_api
+    environment:
+      MONGODB_URL: mongodb://mongo:27017
+      MONGODB_DB_NAME: ${MONGODB_DB_NAME:-store}
+    ports:
+      - "8000:8000"
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+volumes:
+  mongo_data:

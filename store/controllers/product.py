@@ -1,12 +1,13 @@
-from fastapi import APIRouter, status, Depends, HTTPException, Response
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Response, status
+from motor.motor_asyncio import AsyncIOMotorDatabase
+
+from store.core.db import get_db
+from store.core.exceptions import DatabaseException
+from store.repositories.product import ProductRepository
 from store.schemas.product import ProductIn, ProductOut, ProductUpdate
 from store.usecases.product import ProductUsecase
-from store.repositories.product import ProductRepository
-from store.core.db import get_db
-from motor.motor_asyncio import AsyncIOMotorDatabase
-from typing import List, Optional
-from uuid import UUID
-from store.core.exceptions import DatabaseException
 
 router = APIRouter()
 
@@ -23,19 +24,21 @@ def get_usecase(repo: ProductRepository = Depends(get_repository)):
 async def post(body: ProductIn, usecase: ProductUsecase = Depends(get_usecase)):
     try:
         return await usecase.create(body=body)
-    except DatabaseException as e:
+    except DatabaseException as erro:
+        # `from erro` preserva a causa no traceback do servidor; o cliente
+        # continua recebendo uma mensagem generica, sem detalhe do banco.
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Ocorreu um erro ao inserir o produto.",
-        )
+        ) from erro
 
 
 # 2. MÉTODO 'GET'
-@router.get("/", status_code=status.HTTP_200_OK, response_model=List[ProductOut])
+@router.get("/", status_code=status.HTTP_200_OK, response_model=list[ProductOut])
 async def get(
     # 3. Adiciona os query parameters (opcionais)
-    price_min: Optional[float] = None,
-    price_max: Optional[float] = None,
+    price_min: float | None = None,
+    price_max: float | None = None,
     usecase: ProductUsecase = Depends(get_usecase),
 ):
     """

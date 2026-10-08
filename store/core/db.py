@@ -1,7 +1,9 @@
+from datetime import UTC
+
 import motor.motor_asyncio
-from store.core.config import settings
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from datetime import timezone
+
+from store.core.config import settings
 
 
 class MongoClient:
@@ -10,11 +12,14 @@ class MongoClient:
             settings.MONGODB_URL,
             uuidRepresentation="standard",
             tz_aware=True,
-            tzinfo=timezone.utc,
+            tzinfo=UTC,
         )
 
-    def get_database(self, db_name: str) -> AsyncIOMotorDatabase:
-        return self.client[db_name]
+    def get_database(self, db_name: str | None = None) -> AsyncIOMotorDatabase:
+        # Sem nome explicito usa o banco da aplicacao. Antes o parametro era
+        # obrigatorio, e o caminho padrao do ProductRepository (sem injecao de
+        # dependencia) estourava TypeError.
+        return self.client[db_name or settings.MONGODB_DB_NAME]
 
 
 mongo_client = MongoClient()

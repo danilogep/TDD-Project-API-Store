@@ -1,11 +1,11 @@
+import asyncio
+from datetime import datetime
+
 import pytest
 from httpx import AsyncClient
-from store.schemas.product import ProductIn
-from unittest.mock import AsyncMock
-from store.usecases.product import ProductUsecase
+
 from store.core.exceptions import DatabaseException
-from datetime import datetime, timezone
-import asyncio
+from store.usecases.product import ProductUsecase
 
 
 @pytest.mark.asyncio

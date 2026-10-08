@@ -1,133 +1,204 @@
-# TDD Store API - Solução de Projeto
+# Store API — construída por TDD
 
-Este repositório contém uma API RESTful completa para uma loja (Store API), construída do zero utilizando **Desenvolvimento Orientado a Testes (TDD)**. O projeto foi desenvolvido em Python com FastAPI, Pytest, Motor (para MongoDB assíncrono) e Pydantic.
+[![CI](https://github.com/danilogep/TDD-Project-API-Store/actions/workflows/ci.yml/badge.svg)](https://github.com/danilogep/TDD-Project-API-Store/actions/workflows/ci.yml)
+[![Cobertura 100%](https://img.shields.io/badge/cobertura-100%25-brightgreen)](#cobertura)
+[![Python 3.12 | 3.13](https://img.shields.io/badge/python-3.12%20%7C%203.13-3776AB?logo=python&logoColor=white)](https://python.org)
+[![Licença MIT](https://img.shields.io/badge/licença-MIT-green)](LICENSE)
 
-O objetivo principal foi seguir o ciclo TDD (Red-Green-Refactor) para cada funcionalidade, desde a configuração inicial do projeto até à implementação dos *endpoints* CRUD e regras de negócio complexas.
+API REST de catálogo de produtos em FastAPI + MongoDB, escrita teste primeiro. O argumento do projeto não é o CRUD — é a disciplina. Então ela está no topo e é verificável:
 
-## 🚀 Funcionalidades da API
+```bash
+poetry install && poetry run pytest
+```
 
-A API implementa todas as operações CRUD (Create, Read, Update, Delete) para produtos:
+**Um comando. Sem configurar banco, sem `.env`, sem subir nada antes.** A suíte levanta um MongoDB descartável em container, roda os 33 testes e derruba o container no fim. Basta ter Docker no ambiente.
 
-* `POST /products/`: Cria um novo produto.
-* `GET /products/`: Lista todos os produtos (com filtros).
-* `GET /products/{uuid}`: Obtém um produto específico por ID.
-* `PUT /products/{uuid}`: Atualiza um produto.
-* `DELETE /products/{uuid}`: Apaga um produto.
+```
+33 passed in 6.46s
+TOTAL   173 stmts   0 miss   100%
+```
 
-## 🏆 Solução do "Desafio Final"
+Já tem um Mongo no ar? Então nem o container é preciso:
 
-Além do CRUD básico, este projeto implementa as soluções para o "Desafio Final" proposto, tudo seguindo o TDD:
+```bash
+MONGODB_URL_TEST=mongodb://localhost:27017 poetry run pytest
+```
 
-### 1. Tratamento de Erros (Create)
+---
 
-**O Desafio:** Mapear uma exceção de erro de inserção (ex: BD offline) e capturá-la no *controller* para dar uma resposta amigável.
+## O ciclo, num caso concreto
 
-**A Solução (Red-Green-Refactor):**
-1.  **Red (Teste):** Criei um teste de controlador (`test_create_product_should_return_500_on_db_error`) que usa `pytest.monkeypatch` para simular que o `ProductUsecase.create()` levanta uma `DatabaseException`. O teste espera receber um `HTTP 500` com o JSON `{"detail": "Ocorreu um erro..."}`.
-2.  **Green (Código):**
-    * Defini uma exceção personalizada `store.core.exceptions.DatabaseException`.
-    * No `ProductUsecase`, adicionei um `try...except PyMongoError` ao redor da chamada do repositório, que "re-levanta" (re-raises) a exceção como `DatabaseException`.
-    * No *controller* `POST /products/`, adicionei um `try...except DatabaseException` que apanha o erro e retorna a `HTTPException(500, ...)` correta.
-3.  **Refactor (Teste):** O teste passou, confirmando que a API está robusta contra falhas de escrita na base de dados.
+O desafio: ao alterar o preço de um produto, `updated_at` deve ser carimbado com a hora atual — **mas**, se o cliente mandar um `updated_at` explícito no corpo, o valor dele é que vale.
 
-### 2. Lógica de Atualização (`updated_at`)
+### 🔴 Red — o teste primeiro, falhando
 
-**O Desafio:** Ao alterar um dado (ex: `price`), o `updated_at` deve ser atualizado automaticamente para a hora atual. No entanto, se o utilizador *enviar* um `updated_at` no *request*, esse valor manual deve ser usado.
+```python
+# tests/controllers/test_product_controller.py
+async def test_update_product_should_auto_update_updated_at(client):
+    response_post = await client.post("/products/", json=payload)
+    product_uuid = response_post.json()["uuid"]
+    original_updated_at = datetime.fromisoformat(response_post.json()["updated_at"])
 
-**A Solução (Red-Green-Refactor):**
-1.  **Red (Testes):** Criei dois testes:
-    * `test_update_product_should_auto_update_updated_at`: Faz um `PUT` apenas com o `price` e verifica se o `new_updated_at > original_updated_at`.
-    * `test_update_product_should_allow_manual_updated_at`: Faz um `PUT` com `price` *e* um `updated_at` ("2000-01-01") e verifica se o `new_updated_at` é exatamente "2000-01-01".
-2.  **Green (Código):**
-    * Adicionei o campo `updated_at: Optional[datetime]` ao *schema* `ProductUpdate`.
-    * Toda a lógica foi implementada no `ProductUsecase.update()`:
-        ```python
-        # Em store/usecases/product.py
-        
-        async def update(self, uuid: UUID, body: ProductUpdate) -> ProductOut | None:
-            # Se o utilizador NÃO enviou um updated_at, defina-o para agora.
-            if body.updated_at is None:
-                body.updated_at = datetime.now(timezone.utc)
-            
-            # Passe o body (com o updated_at manual ou automático) para o repositório
-            product_model = await self.repository.update(uuid, body)
-            
-            # ... (resto da lógica) ...
-        ```
-    * Garanti que o `repository.update()` usa `model_dump(exclude_none=True)` para incluir o `updated_at` definido pelo *usecase*.
-3.  **Refactor (Teste):** Os dois testes passaram, confirmando a lógica de negócio dupla.
+    await asyncio.sleep(0.001)
 
-### 3. Filtros de Preço (List)
+    response_put = await client.put(f"/products/{product_uuid}", json={"price": 7500.00})
 
-**O Desafio:** Aplicar um filtro de preço na listagem `GET /products/` (ex: `price > 5000 and price < 8000`).
+    new_updated_at = datetime.fromisoformat(response_put.json()["updated_at"])
+    assert new_updated_at > original_updated_at
+```
 
-**A Solução (Red-Green-Refactor):**
-1.  **Red (Teste):** Criei um teste (`test_list_products_should_filter_by_price`) que cria 4 produtos com preços variados (4000, 6000, 7500, 9000). O teste depois chama `GET /products/?price_min=5000&price_max=8000` e falha, verificando `assert len(response_data) == 4` (errado) em vez de `2` (correto).
-2.  **Green (Código):** A implementação foi feita em todas as camadas:
-    * **Controller (`GET /`):** Adicionei os *query parameters* `price_min: Optional[float] = None` e `price_max: Optional[float] = None` e passei-os para o *usecase*.
-    * **Usecase (`list`):** Modifiquei o método `list()` para aceitar `price_min` e `price_max` e passá-los para o *repositório*.
-    * **Repository (`list`):** O método `list()` agora constrói uma *query* de filtro dinâmica para o MongoDB, usando os operadores `$gt` (greater than) e `$lt` (less than).
-        ```python
-        # Em store/repositories/product.py
-        
-        async def list(self, price_min: Optional[float] = None, price_max: Optional[float] = None) -> List[ProductModel]:
-            filter_query = {}
-            price_filter = {}
-            
-            if price_min is not None:
-                price_filter["$gt"] = price_min
-            
-            if price_max is not None:
-                price_filter["$lt"] = price_max
-                
-            if price_filter:
-                filter_query["price"] = price_filter
+```
+>       assert new_updated_at > original_updated_at
+E       assert datetime.datetime(2026, 10, 8, 19, 33, 40, 948000, tzinfo=datetime.timezone.utc)
+E            > datetime.datetime(2026, 10, 8, 19, 33, 40, 948257, tzinfo=datetime.timezone.utc)
+FAILED tests/controllers/test_product_controller.py::test_update_product_should_auto_update_updated_at
+1 failed in 1.07s
+```
 
-            # A query de filtro é usada no .find()
-            products = [ProductModel(**item) async for item in self.collection.find(filter_query)]
-            return products
-        ```
-3.  **Refactor (Teste):** O teste passou, confirmando que o filtro da base de dados está a funcionar corretamente através da API.
+A diferença de 257 microssegundos entre os dois lados é só o arredondamento do
+BSON para milissegundos — o `updated_at` gravado é o mesmo do `POST`. É esse o
+sinal do vermelho: a atualização não recarimbou nada.
 
-## 🛠️ Tecnologias Utilizadas
+Falha porque `ProductUpdate` não tinha `updated_at` e nada recarimbava o campo: o `$set` gravava só o preço.
 
-* **Python 3.11+**
-* **FastAPI:** Para a criação da API assíncrona.
-* **Pytest:** Para testes (incluindo `pytest-asyncio` para testes assíncronos).
-* **Pydantic (V2):** Para validação de dados e configurações.
-* **MongoDB (Atlas):** Base de dados NoSQL na nuvem.
-* **Motor:** Driver assíncrono para o MongoDB.
-* **Poetry:** Para gestão de dependências e ambientes virtuais.
+### 🟢 Green — o mínimo para passar
 
-## 🏁 Como Executar o Projeto
+```python
+# store/usecases/product.py
+async def update(self, uuid: UUID, body: ProductUpdate) -> ProductOut | None:
+    # Carimba só quando o cliente não mandou valor próprio. É esta única
+    # linha que separa "atualizado agora" de "atualizado quando eu disser".
+    if body.updated_at is None:
+        body.updated_at = datetime.now(UTC)
 
-1.  **Clone o repositório:**
-    ```bash
-    git clone [URL-DO-SEU-REPOSITÓRIO]
-    cd tdd-project-api-store
-    ```
+    product_model = await self.repository.update(uuid, body)
+    ...
+```
 
-2.  **Instale as dependências:**
-    ```bash
-    poetry install
-    ```
+```python
+# store/repositories/product.py — exclude_none é o que faz a regra funcionar:
+# campo não enviado não vira $set, e não apaga o que está gravado.
+update_data = product_update.model_dump(exclude_none=True)
+```
 
-3.  **Configure o ambiente:**
-    * Crie um ficheiro `.env` na raiz do projeto.
-    * Adicione as suas variáveis de ambiente:
-        ```.env
-        MONGODB_URL="mongodb+srv://user:pass@seu-cluster.mongodb.net/"
-        MONGODB_DB_NAME="store"
-        MONGODB_DB_NAME_TEST="test_store"
-        ```
+### 🔵 Refactor — e o segundo teste, que trava a outra metade
 
-4.  **Execute os testes (Opcional, mas recomendado):**
-    ```bash
-    poetry run pytest
-    ```
+Com o automático verde, o manual entra como teste próprio, para que uma simplificação futura não derrube a regra:
 
-5.  **Execute a aplicação:**
-    ```bash
-    poetry run uvicorn store.main:app --reload
-    ```
-    A API estará disponível em `http://127.0.0.1:8000/docs`.
+```python
+async def test_update_product_should_allow_manual_updated_at(client):
+    update_payload = {"price": 7500.00, "updated_at": "2000-01-01T00:00:00+00:00"}
+    response_put = await client.put(f"/products/{product_uuid}", json=update_payload)
+
+    assert datetime.fromisoformat(response_put.json()["updated_at"]) == manual_date
+```
+
+Os dois vivem lado a lado em [`tests/controllers/test_product_controller.py`](tests/controllers/test_product_controller.py).
+
+---
+
+## Cobertura
+
+```
+Name                             Stmts   Miss  Cover
+-----------------------------------------------------
+store/controllers/product.py        41      0   100%
+store/core/config.py                 7      0   100%
+store/core/db.py                    12      0   100%
+store/core/exceptions.py             4      0   100%
+store/main.py                        7      0   100%
+store/models/product.py              8      0   100%
+store/repositories/product.py       39      0   100%
+store/schemas/product.py            23      0   100%
+store/usecases/product.py           35      0   100%
+-----------------------------------------------------
+TOTAL                              173      0   100%
+```
+
+O número não veio de cobrir o caminho feliz com mais asserções. Veio de [`tests/test_caminhos_de_erro.py`](tests/test_caminhos_de_erro.py), que trava o que ninguém exercita à mão: `PUT` e `DELETE` em UUID inexistente, UUID malformado na rota, `update` sem documento correspondente, e a falha do driver virando `DatabaseException`.
+
+O CI reprova abaixo de 90%.
+
+---
+
+## Por que um Mongo de verdade nos testes
+
+Quase tudo que esta API faz é tradução entre Pydantic e BSON: UUID nativo, `datetime` com fuso, `$gt`/`$lt`/`$set`. Um dobro em memória concorda com qualquer coisa que o repositório mande — e passaria verde exatamente nos pontos em que o banco reprovaria. Então a suíte fala com um MongoDB real, e o custo disso foi empurrado para a infraestrutura em vez do desenvolvedor:
+
+| Como você roda | O que acontece |
+|---|---|
+| `poetry run pytest` | [testcontainers](https://testcontainers.com/) sobe um `mongo:7`, roda, derruba |
+| `MONGODB_URL_TEST=... pytest` | usa o servidor que você indicou |
+| CI | usa o serviço `mongo:7.0` do GitHub Actions |
+
+A variável `MONGODB_URL` — a do banco da aplicação — **nunca** é usada pelos testes. Teste que executa `drop_collection` não escolhe sozinho em qual servidor vai fazer isso.
+
+---
+
+## A API
+
+| Método | Rota | O que faz |
+|---|---|---|
+| `POST` | `/products/` | Cria um produto |
+| `GET` | `/products/` | Lista, com `price_min` e `price_max` opcionais |
+| `GET` | `/products/{uuid}` | Consulta por ID |
+| `PUT` | `/products/{uuid}` | Atualiza (com a regra de `updated_at`) |
+| `DELETE` | `/products/{uuid}` | Remove |
+| `GET` | `/healthcheck` | Disponibilidade |
+
+Subindo a aplicação:
+
+```bash
+cp .env.example .env
+docker compose up --build       # API em localhost:8000/docs, Mongo em 27017
+```
+
+<details>
+<summary>Sem Docker</summary>
+
+```bash
+poetry install
+cp .env.example .env            # aponte MONGODB_URL para o seu Mongo
+poetry run uvicorn store.main:app --reload
+```
+</details>
+
+---
+
+## Os outros dois desafios
+
+**Tratamento de erro na escrita.** O `ProductUsecase` captura `PyMongoError` e relança como `DatabaseException`; o controller traduz para `HTTP 500` com mensagem própria. A camada de cima não precisa saber qual banco existe lá embaixo — e o cliente não recebe detalhe de infraestrutura na resposta. Travado por `test_create_product_should_return_500_on_db_error` e `test_falha_do_banco_vira_database_exception`.
+
+**Filtro de preço.** `GET /products/?price_min=5000&price_max=8000` desce pelas três camadas até virar `{"price": {"$gt": 5000, "$lt": 8000}}` no `find`. O teste cria quatro produtos de preços distintos e exige que voltem exatamente dois.
+
+---
+
+## Arquitetura
+
+```
+store/controllers/   rotas HTTP, tradução de exceção para status code
+store/usecases/      regra de negócio; não conhece HTTP nem PyMongo
+store/repositories/  acesso ao MongoDB; não conhece regra de negócio
+store/schemas/       contrato de entrada e saída (Pydantic)
+store/models/        documento como é gravado
+store/core/          configuração, conexão e exceções
+```
+
+Cada camada é testada no seu nível: repositório contra banco real, usecase com repositório dublado, controller ponta a ponta.
+
+## Stack
+
+FastAPI · Pydantic v2 · Motor (MongoDB assíncrono) · Poetry · pytest · pytest-asyncio · testcontainers · ruff · pre-commit
+
+## Qualidade
+
+```bash
+poetry run ruff check .          # lint
+poetry run pre-commit install    # roda ruff + checagens a cada commit
+```
+
+As mesmas verificações rodam no CI, em Python 3.12 e 3.13.
+
+## Licença
+
+[MIT](LICENSE).

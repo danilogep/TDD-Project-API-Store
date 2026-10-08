@@ -1,9 +1,7 @@
-import pytest
-from pydantic import ValidationError
-from uuid import UUID
 from datetime import datetime
+from uuid import UUID
 
-from store.schemas.product import ProductIn, ProductOut, ProductUpdate
+from store.schemas.product import ProductOut, ProductUpdate
 
 
 def test_product_out_schema_should_validate_data_correctly():

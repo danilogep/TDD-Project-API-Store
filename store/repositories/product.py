@@ -1,10 +1,11 @@
+from uuid import UUID
+
 from motor.motor_asyncio import AsyncIOMotorDatabase
+from pymongo.results import DeleteResult, UpdateResult
+
+from store.core.db import mongo_client
 from store.models.product import ProductModel
 from store.schemas.product import ProductUpdate
-from store.core.db import mongo_client
-from typing import List, Optional
-from uuid import UUID
-from pymongo.results import UpdateResult, DeleteResult
 
 
 class ProductRepository:
@@ -18,8 +19,8 @@ class ProductRepository:
 
     # 2. MÉTODO 'LIST'
     async def list(
-        self, price_min: Optional[float] = None, price_max: Optional[float] = None
-    ) -> List[ProductModel]:
+        self, price_min: float | None = None, price_max: float | None = None
+    ) -> list[ProductModel]:
         """
         Lista produtos, opcionalmente filtrando por preço.
         """
