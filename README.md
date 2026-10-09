@@ -208,3 +208,7 @@ As mesmas verificações rodam no CI, em Python 3.12 e 3.13.
 ## Licença
 
 [MIT](LICENSE).
+
+---
+
+<sub>Parte do meu portfólio — mais projetos em **[github.com/danilogep](https://github.com/danilogep)** · [LinkedIn](https://linkedin.com/in/danilogep)</sub>
