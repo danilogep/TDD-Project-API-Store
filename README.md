@@ -153,6 +153,12 @@ cp .env.example .env
 docker compose up --build       # API em localhost:8000/docs, Mongo em 27017
 ```
 
+Porta ocupada por outro projeto? Troque sem editar arquivo nenhum:
+
+```bash
+API_PORT=8010 MONGO_PORT=27018 docker compose up -d
+```
+
 <details>
 <summary>Sem Docker</summary>
 
